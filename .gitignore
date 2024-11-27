@@ -1,7 +1,7 @@
+#ignore compiled files and build
 /build/
 /*.log
 /.env
-
 *.out
 *.exe
 *.o
