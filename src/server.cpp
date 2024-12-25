@@ -1,10 +1,8 @@
 #include <iostream>
+#include <sys/socket.h>
 #include <cstring>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
@@ -32,7 +30,7 @@ int main(int argc, char* argv[]) {
 
         // Bind socket
         if (bind(server_socket, rp->ai_addr, rp->ai_addrlen) == 0) {
-            std::cout << "Bind Successful!";
+            std::cout << "Bind Successful!\n";
             break;
         }
 
@@ -40,15 +38,36 @@ int main(int argc, char* argv[]) {
     freeaddrinfo(result);
     if (server_socket == -1) {
         std::cout << "Socket creation failed.\n";
-        return 1;
+        close(server_socket);
+        return -1;
    }
-   std::cout << "Socket created!\n";
     
     // Listen
-
+    if (listen(server_socket, 10) == -1) {
+        std::cout << "Listening failed!\n";
+        close(server_socket);
+        return -1;
+    }
+    std::cout << "Listening out on Port 8080.\n";
     // Accept
-
+    int client_fd = accept(server_socket, 0, 0);
+    if (client_fd == -1) {
+        std::cout << "Accept failed.\n";
+        close(client_fd);
+        close(server_socket);
+        return -1;
+    }
     // Send Recieve
+    std::cout << "Client connected." << std::endl;
+
+    char buffer[1024];
+    const char* message = "Hello from server!";
+    if (send(client_fd, message, strlen(message), 0) == -1) {
+        perror("Send failed");
+    }
+
+
+
 
     // Clean up/Close
     close(server_socket);
