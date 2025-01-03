@@ -61,9 +61,12 @@ int main(int argc, char* argv[]) {
     std::cout << "Client connected." << std::endl;
 
     char buffer[1024];
-    const char* message = "Hello from server!";
-    if (send(client_fd, message, strlen(message), 0) == -1) {
-        perror("Send failed");
+    ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+    if (bytes_received > 0) {
+        buffer[bytes_received] = '\0'; // Null-terminate the message
+        std::cout << buffer << std::endl;
+    } else {
+        perror("Receive failed");
     }
 
 
