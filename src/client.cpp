@@ -55,6 +55,5 @@ int main(int argc, char* argv[]) {
     close(server_socket);
     std::cout << "All cleaned up\n";
 
-    
     return 0;
 }

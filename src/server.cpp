@@ -69,6 +69,9 @@ int main(int argc, char* argv[]) {
         perror("Receive failed");
     }
 
+    char *reply = "HTTP/1.1 200 OK\r\n\r\n";
+    int bytes_sent = send(client_fd, reply, strlen(reply), 0);
+
 
 
 
