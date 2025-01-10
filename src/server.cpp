@@ -5,11 +5,13 @@
 #include <netdb.h>
 #include <unistd.h>
 
+void http_parser(char *buffer);
+
 int main(int argc, char* argv[]) {
-     // Find/Set up host address info
+    // Find/Set up host address info
     struct addrinfo hints, *result, *rp;
     int status;
-    int server_socket;
+    int server_socket, binded_socket;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -29,17 +31,26 @@ int main(int argc, char* argv[]) {
         }
 
         // Bind socket
-        if (bind(server_socket, rp->ai_addr, rp->ai_addrlen) == 0) {
+        if ((binded_socket = bind(server_socket, rp->ai_addr, rp->ai_addrlen)) == 0) {
             std::cout << "Bind Successful!\n";
             break;
+        } else {
+            std::cout << "Bind failed.\n";
         }
 
     }
     freeaddrinfo(result);
+
     if (server_socket == -1) {
         std::cout << "Socket creation failed.\n";
         close(server_socket);
         return -1;
+   }
+
+   if (binded_socket == -1) {
+    std::cout << "Bind failed.\n";
+    close(server_socket);
+    return -1;
    }
     
     // Listen
@@ -69,6 +80,8 @@ int main(int argc, char* argv[]) {
         perror("Receive failed");
     }
 
+    http_parser(buffer);
+
     char *reply = "HTTP/1.1 200 OK\r\n\r\n";
     int bytes_sent = send(client_fd, reply, strlen(reply), 0);
 
@@ -81,4 +94,13 @@ int main(int argc, char* argv[]) {
 
     
     return 0;
+}
+
+void http_parser(char *buffer) {
+    int i = 0;
+    while (!isspace(buffer[i])) {
+        i++;
+    }
+    buffer[i] = '\0';
+    std::cout << buffer << '\n';
 }
