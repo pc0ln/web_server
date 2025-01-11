@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-void http_parser(char *buffer);
+int http_parser(char *buffer);
 
 int main(int argc, char* argv[]) {
     // Find/Set up host address info
@@ -80,9 +80,10 @@ int main(int argc, char* argv[]) {
         perror("Receive failed");
     }
 
-    http_parser(buffer);
-
-    char *reply = "HTTP/1.1 200 OK\r\n\r\n";
+    int valid = http_parser(buffer);
+    
+    const char *reply;
+    reply = valid == 0 ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 400 Bad Request\r\n\r\n";
     int bytes_sent = send(client_fd, reply, strlen(reply), 0);
 
 
@@ -96,11 +97,12 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-void http_parser(char *buffer) {
+int http_parser(char *buffer) {
     int i = 0;
     while (!isspace(buffer[i])) {
         i++;
     }
     buffer[i] = '\0';
     std::cout << buffer << '\n';
+    return strcmp(buffer, "GET");
 }
