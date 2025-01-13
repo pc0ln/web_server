@@ -4,8 +4,13 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <errno.h>
 
+void handle_request(char* req, char* res);
 int http_parser(char *buffer);
+void response_builder(char* res_body, int offset);
 
 int main(int argc, char* argv[]) {
     // Find/Set up host address info
@@ -80,11 +85,21 @@ int main(int argc, char* argv[]) {
         perror("Receive failed");
     }
 
-    int valid = http_parser(buffer);
+    char response[1024];
+    handle_request(buffer, response);
+    std::cout << "response: " << response << '\n';
+
+    // int valid = http_parser(buffer);
     
-    const char *reply;
-    reply = valid == 0 ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 400 Bad Request\r\n\r\n";
-    int bytes_sent = send(client_fd, reply, strlen(reply), 0);
+    // char *reply;
+    // if (valid != 0) {
+    //     reply = "HTTP/1.1 400 Bad Request\r\n\r\n";
+    // } else {
+    //     response_builder(client_fd);
+    //     reply = "HTTP/1.1 200 OK\r\n\r\n";
+    // }
+    
+    int bytes_sent = send(client_fd, response, strlen(response), 0);
 
 
 
@@ -97,6 +112,15 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+void handle_request(char* req, char* res) {
+    if (http_parser(req) != 0) {
+        strncpy(res, "HTTP/1.1 400 Bad Request\r\n\r\n", 30);
+    } else {
+        char* body = stpncpy(res, "HTTP/1.1 200 OK\r\n", 18);
+        response_builder(body, 18); 
+    }
+}
+
 int http_parser(char *buffer) {
     int i = 0;
     while (!isspace(buffer[i])) {
@@ -105,4 +129,16 @@ int http_parser(char *buffer) {
     buffer[i] = '\0';
     std::cout << buffer << '\n';
     return strcmp(buffer, "GET");
+}
+
+void response_builder(char* res_body, int offset) {
+    int opened_fd = open("../src/index.html", O_RDONLY);
+    if (opened_fd == -1) {
+        std::cout << strerror(errno) << "\n";
+    }
+    int bytes_read = read(opened_fd, res_body, 1024 - offset);
+    //std::cout << "bytes: " << bytes_read << " body: " << res_body << "\n";
+    //std::cout << strerror(errno) << "\n";
+    res_body[bytes_read++] = '\r';
+    res_body[bytes_read] = '\n';
 }
