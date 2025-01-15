@@ -65,42 +65,33 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     std::cout << "Listening out on Port 8080.\n";
-    // Accept
-    int client_fd = accept(server_socket, 0, 0);
-    if (client_fd == -1) {
-        std::cout << "Accept failed.\n";
-        close(client_fd);
-        close(server_socket);
-        return -1;
+    while(true) {
+        // Accept
+        int client_fd = accept(server_socket, 0, 0);
+        if (client_fd == -1) {
+            std::cout << "Accept failed.\n";
+            close(client_fd);
+            break;
+        }
+        // Send Recieve
+        std::cout << "Client connected." << std::endl;
+
+        char buffer[1024];
+        ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0'; // Null-terminate the message
+            std::cout << buffer << std::endl;
+        } else {
+            perror("Receive failed");
+            break;
+        }
+
+        char response[1024];
+        handle_request(buffer, response);
+        std::cout << "response: " << response << '\n';
+
+        int bytes_sent = send(client_fd, response, strlen(response), 0);
     }
-    // Send Recieve
-    std::cout << "Client connected." << std::endl;
-
-    char buffer[1024];
-    ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received > 0) {
-        buffer[bytes_received] = '\0'; // Null-terminate the message
-        std::cout << buffer << std::endl;
-    } else {
-        perror("Receive failed");
-    }
-
-    char response[1024];
-    handle_request(buffer, response);
-    std::cout << "response: " << response << '\n';
-
-    // int valid = http_parser(buffer);
-    
-    // char *reply;
-    // if (valid != 0) {
-    //     reply = "HTTP/1.1 400 Bad Request\r\n\r\n";
-    // } else {
-    //     response_builder(client_fd);
-    //     reply = "HTTP/1.1 200 OK\r\n\r\n";
-    // }
-    
-    int bytes_sent = send(client_fd, response, strlen(response), 0);
-
 
 
 
@@ -116,19 +107,19 @@ void handle_request(char* req, char* res) {
     if (http_parser(req) != 0) {
         strncpy(res, "HTTP/1.1 400 Bad Request\r\n\r\n", 30);
     } else {
-        char* body = stpncpy(res, "HTTP/1.1 200 OK\r\n", 18);
-        response_builder(body, 18); 
+        char* body = stpncpy(res, "HTTP/1.1 200 OK\r\n\r\n", 20);
+        response_builder(body, 20); 
     }
 }
 
 int http_parser(char *buffer) {
     int i = 0;
-    while (!isspace(buffer[i])) {
+    while (buffer[i] != '\r') {
         i++;
     }
     buffer[i] = '\0';
-    std::cout << buffer << '\n';
-    return strcmp(buffer, "GET");
+    std::cout <<"TOP LINE:" << buffer << '\n';
+    return strncmp(buffer, "GET", 3);
 }
 
 void response_builder(char* res_body, int offset) {
@@ -139,6 +130,6 @@ void response_builder(char* res_body, int offset) {
     int bytes_read = read(opened_fd, res_body, 1024 - offset);
     //std::cout << "bytes: " << bytes_read << " body: " << res_body << "\n";
     //std::cout << strerror(errno) << "\n";
-    res_body[bytes_read++] = '\r';
-    res_body[bytes_read] = '\n';
+    //res_body[bytes_read++] = '\r';
+    //res_body[bytes_read] = '\n';
 }
