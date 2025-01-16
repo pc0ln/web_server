@@ -7,7 +7,9 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 #include <errno.h>
+#include <thread>
 
+void handle_client(int* fd);
 void handle_request(char* req, char* res);
 void response_builder(const char* file, char* res_body, int offset);
 
@@ -63,6 +65,7 @@ int main(int argc, char* argv[]) {
         close(server_socket);
         return -1;
     }
+
     std::cout << "Listening out on Port 8080.\n";
     while(true) {
         // Accept
@@ -75,22 +78,9 @@ int main(int argc, char* argv[]) {
         // Send Recieve
         std::cout << "Client connected." << std::endl;
 
-        char buffer[1024];
-        ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received > -1) {
-            buffer[bytes_received] = '\0'; // Null-terminate the message
-            std::cout << buffer << std::endl;
-        } else {
-            perror("Receive failed");
-            break;
-        }
-
-        char response[1024];
-        handle_request(buffer, response);
-        std::cout << "response: " << response << '\n';
-
-        int bytes_sent = send(client_fd, response, strlen(response), 0);
-        close(client_fd);
+        std::thread client(handle_client, &client_fd);
+        client.detach();
+        
     }
 
 
@@ -101,6 +91,26 @@ int main(int argc, char* argv[]) {
 
     
     return 0;
+}
+
+void handle_client(int* fd) {
+    char buffer[1024];
+        ssize_t bytes_received = recv(*fd, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0'; // Null-terminate the message
+            std::cout << buffer << std::endl;
+        } else {
+            perror("Receive failed");
+            close(*fd);
+            return;
+        }
+
+        char response[1024];
+        handle_request(buffer, response);
+        std::cout << "response: " << response << '\n';
+
+        int bytes_sent = send(*fd, response, strlen(response), 0);
+        //close(*fd);
 }
 
 void handle_request(char* req, char* res) {
