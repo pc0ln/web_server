@@ -4,4 +4,4 @@ project(WebServer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(test src/server.cpp)
+add_executable(test src/main.cpp)
