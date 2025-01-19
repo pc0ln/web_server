@@ -9,11 +9,12 @@
 #include <sys/sendfile.h>
 #include <errno.h>
 #include <thread>
+#include <functional>
 
 server::server(char* ip_addr, char* port) {
     struct addrinfo hints, *result, *rp;
     int status;
-    int server_socket, binded_socket;
+    int binded_socket;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -34,6 +35,7 @@ server::server(char* ip_addr, char* port) {
         // Bind socket
         if ((binded_socket = bind(server_socket, rp->ai_addr, rp->ai_addrlen)) == 0) {
             break;
+        }
     }
     freeaddrinfo(result);
 
@@ -57,7 +59,6 @@ server::server(char* ip_addr, char* port) {
     }
 
     std::cout << "Listening out on Port" << port << "\n";
-    }
 }
 
 int server::start() {
@@ -72,10 +73,10 @@ int server::start() {
         // Send Recieve
         std::cout << "Client connected." << std::endl;
 
-        std::thread client(handle_client, client_fd);
-        client.detach();
-        
+        std::thread client(std::bind(&server::handle_client, this, client_fd));
+        client.detach(); 
     }
+    return 0;
 }
 
 server::~server() {
