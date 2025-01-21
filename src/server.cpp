@@ -65,7 +65,7 @@ server::server(char* ip_addr, char* port) {
     std::cout << "Listening out on Port" << port << "\n";
 }
 
-// Starts serrver to accept clients in loop
+// Starts server to accept clients in loop
 int server::start() {
     while(true) {
         // Accept
@@ -82,6 +82,9 @@ int server::start() {
         //Multithreading using bind to bind to said instance of server
         std::thread client(std::bind(&server::handle_client, this, client_fd));
         client.detach(); 
+
+        // Takes threadpool as input and then just queues the accepted client fd
+        //threadpool.queue(client_fd);
     }
     return 0;
 }
