@@ -1,4 +1,5 @@
 #include "server.h"
+#include "threadpool.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <cstring>
@@ -66,7 +67,7 @@ server::server(char* ip_addr, char* port) {
 }
 
 // Starts server to accept clients in loop
-int server::start() {
+int server::start(threadpool &tpool) {
     while(true) {
         // Accept
         int client_fd = accept(server_socket, 0, 0);
@@ -80,8 +81,10 @@ int server::start() {
 
 
         //Multithreading using bind to bind to said instance of server
-        std::thread client(std::bind(&server::handle_client, this, client_fd));
-        client.detach(); 
+        //std::thread client(std::bind(&server::handle_client, this, client_fd));
+        //client.detach(); 
+
+        tpool.enqueue(client_fd);
 
         // Takes threadpool as input and then just queues the accepted client fd
         //threadpool.queue(client_fd);
