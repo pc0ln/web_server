@@ -4,4 +4,4 @@ project(WebServer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(test src/main.cpp src/server.cpp)
+add_executable(test src/main.cpp src/server.cpp src/threadpool.cpp)

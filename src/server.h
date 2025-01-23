@@ -1,5 +1,6 @@
 #ifndef SERVER_HEADER
 #define SERVER_HEADER
+#include "threadpool.h"
 
 class server
 {
@@ -11,7 +12,7 @@ private:
 
 public:
     server(char* ip_addr, char* port);
-    int start(threadpool &tpool);
+    int start(threadpool *tpool);
     ~server();
 };
 
