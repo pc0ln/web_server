@@ -9,22 +9,23 @@
 // Initalizing threadpool with number of worker threads
 threadpool::threadpool(int threads) {
     for (int i = 0; i < threads; ++i) {
-        //Create threads but lock them
+        //Create threads in worker vector
         workers.emplace_back([this] {
             while (true) {
                 int client_fd;
                 {
+                    // Locks queue until wait to see if stop is true or a client is added
                     std::unique_lock<std::mutex> lock(queue_mutex);
-                    cv.wait(lock, [this] {return !task_list.empty() || stop;});
-                    if (stop && task_list.empty()) {
-                        std::cout << "exiting\n";
+                    cv.wait(lock, [this] {return !client_list.empty() || stop;});
+                    // If stopped
+                    if (stop && client_list.empty()) {
                         return;
                     }
-                    std::cout << "looking at queue\n";
-                    client_fd = task_list.front();
-                    task_list.pop();
+                    // Takes the client from queue
+                    client_fd = client_list.front();
+                    client_list.pop();
                 }
-                std::cout << "sending to handle function\n";
+                // Runs the client fd into handle function
                 handle_client(client_fd);
             }
         });
@@ -33,23 +34,23 @@ threadpool::threadpool(int threads) {
 
 // Queuing clients to run handle client on
 void threadpool::enqueue(int client_fd) {
-    std::cout << "queued\n";
     {
+        // Locks queue to add client to list
         std::unique_lock<std::mutex> lock(queue_mutex);
-        task_list.push(client_fd);
+        client_list.push(client_fd);
     }
-    std::cout << "tasks: " << task_list.size() << "\n";
+    // Notifies a thread
     cv.notify_one();
 }
 
 threadpool::~threadpool() {
-    std::cout << "deconstructed\n";
     // Remove threads
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         stop = true;
     }
 
+    // Notifies all threads to join main thread ensuring completed task
     cv.notify_all();
     for (std::thread &worker: workers) {
         worker.join();
@@ -58,12 +59,10 @@ threadpool::~threadpool() {
 
 void threadpool::handle_client(int fd) {
     //Fills recieved buffer from client
-    std::cout << "handling client\n";
-    char buffer[1024];
-    ssize_t bytes_received = recv(fd, buffer, sizeof(buffer) - 1, 0);
+    char request[1024];
+    ssize_t bytes_received = recv(fd, request, sizeof(request) - 1, 0);
     if (bytes_received > 0) {
-        buffer[bytes_received] = '\0'; // Null-terminate the message
-        std::cout << buffer << std::endl;
+        request[bytes_received] = '\0'; // Null-terminate the message
     } else {
         perror("Receive failed");
         close(fd);
@@ -71,12 +70,10 @@ void threadpool::handle_client(int fd) {
     }
     // Send to handle request with extra buffer for response
     char response[1024];
-    handle_request(buffer, response);
-    std::cout << "response: " << response << '\n';
+    handle_request(request, response);
     
     // Sends response
     int bytes_sent = send(fd, response, strlen(response), 0);
-    std::cout << "sent and closing client\n";
     close(fd);
 }
 

@@ -71,18 +71,9 @@ int server::start(threadpool *tpool) {
             close(client_fd);
             break;
         }
-        // Send Recieve
-        std::cout << "Client connected." << std::endl;
 
-
-        //Multithreading using bind to bind to said instance of server
-        //std::thread client(std::bind(&server::handle_client, this, client_fd));
-        //client.detach(); 
-
+        // Adds accepted client to thread pool list
         tpool->enqueue(client_fd);
-
-        // Takes threadpool as input and then just queues the accepted client fd
-        //threadpool.queue(client_fd);
     }
     return 0;
 }
@@ -90,5 +81,4 @@ int server::start(threadpool *tpool) {
 server::~server() {
     // Clean up/Close
     close(server_socket);
-    std::cout << "All cleaned up\n";
 }

@@ -9,7 +9,7 @@
 class threadpool
 {
 private:
-    std::queue<int> task_list;
+    std::queue<int> client_list;
     std::vector<std::thread> workers;
     std::condition_variable cv;
     std::mutex queue_mutex;
@@ -18,6 +18,7 @@ public:
     threadpool(int threads);
     ~threadpool();
     void enqueue(int client_fd);
+    // Helper functions
     void handle_client(int fd);
     void handle_request(char* req, char* res);
     void response_builder(const char* file, char* res_body, int offset);
